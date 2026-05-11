@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: echoalertbackend
+    runtime: docker
+    rootDir: backend
+    plan: free
