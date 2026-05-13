@@ -33,24 +33,33 @@ public class AuthService {
         }
 
         User user = new User();
-        user.setName(registerDTO.getName()); // 👈 IMPORTANT (tumhari entity me required hai)
+
+        user.setName(registerDTO.getName());
         user.setEmail(registerDTO.getEmail());
 
-        // ✅ encode password
-        user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
+        // ✅ PASSWORD ENCODE
+        user.setPassword(
+                passwordEncoder.encode(registerDTO.getPassword())
+        );
 
-        // ✅ FIX: ENUM ROLE HANDLE
-        UserRole role = (registerDTO.getRole() == null || registerDTO.getRole().isBlank())
-                ? UserRole.ROLE_USER
-                : UserRole.valueOf(registerDTO.getRole());
+        // ✅ ADMIN EMAIL CHECK
+        UserRole role;
+
+        if (registerDTO.getEmail().equalsIgnoreCase("hariom@gmail.com")) {
+            role = UserRole.ROLE_ADMIN;
+        } else {
+            role = UserRole.ROLE_USER;
+        }
 
         user.setRole(role);
 
+        // ✅ SAVE USER
         userRepository.save(user);
 
+        // ✅ GENERATE TOKEN
         String token = jwtUtil.generateToken(
                 user.getEmail(),
-                user.getRole().name() // 👈 STRING me convert
+                user.getRole().name()
         );
 
         return new AuthResponseDTO(
