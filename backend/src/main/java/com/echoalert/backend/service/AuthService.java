@@ -45,7 +45,7 @@ public class AuthService {
         // ✅ ADMIN EMAIL CHECK
         UserRole role;
 
-        if (registerDTO.getEmail().equalsIgnoreCase("hariom@gmail.com")) {
+        if (registerDTO.getEmail().equalsIgnoreCase("hariomsingh@gmail.com")) {
             role = UserRole.ROLE_ADMIN;
         } else {
             role = UserRole.ROLE_USER;
