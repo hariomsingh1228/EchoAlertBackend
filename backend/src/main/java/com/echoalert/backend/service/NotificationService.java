@@ -53,7 +53,7 @@ public class NotificationService {
                 message.put("sound", "emergency.mp3");
 
                 // Android notification channel
-                message.put("channelId", "echo-alerts");
+                message.put("channelId", "echo-alerts-v2");
 
                 message.put("title", "🚨 " + alert.getTitle());
                 message.put("body", alert.getMessage());
