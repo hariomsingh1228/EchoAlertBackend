@@ -35,18 +35,21 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // 🔥 Public APIs
+                        // Public APIs
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/alerts/**",
+                                "/api/notifications/**",
                                 "/h2-console/**",
-                                "/api/alerts/**"
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
                         ).permitAll()
 
-                        // 🔥 Users APIs secured
+                        // Users APIs secured
                         .requestMatchers("/api/users/**")
                         .hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
 
-                        // 🔥 Everything else authenticated
+                        // Everything else authenticated
                         .anyRequest().authenticated()
                 )
 
@@ -54,16 +57,13 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // 🔥 Exception Handling
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(unauthorizedHandler())
                         .accessDeniedHandler(accessDeniedHandler())
                 );
 
-        // ✅ JWT Filter
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // ✅ H2 Console Support
         http.headers(headers ->
                 headers.frameOptions(frame -> frame.disable())
         );
@@ -71,7 +71,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 🔥 401 Unauthorized Handler
     @Bean
     public AuthenticationEntryPoint unauthorizedHandler() {
         return (request, response, authException) -> {
@@ -80,7 +79,6 @@ public class SecurityConfig {
         };
     }
 
-    // 🔥 403 Forbidden Handler
     @Bean
     public AccessDeniedHandler accessDeniedHandler() {
         return (request, response, accessDeniedException) -> {

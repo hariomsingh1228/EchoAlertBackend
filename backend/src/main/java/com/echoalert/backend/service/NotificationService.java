@@ -1,57 +1,89 @@
 package com.echoalert.backend.service;
 
-import com.echoalert.backend.dto.NotificationDTO;
-import com.echoalert.backend.entity.NotificationLog;
-import com.echoalert.backend.exception.ResourceNotFoundException;
-import com.echoalert.backend.repository.NotificationRepository;
-import org.modelmapper.ModelMapper;
+import com.echoalert.backend.entity.Alert;
+import com.echoalert.backend.entity.PushToken;
+import com.echoalert.backend.repository.PushTokenRepository;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class NotificationService {
 
-    private final NotificationRepository notificationRepository;
-    private final ModelMapper modelMapper;
+    private static final String EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
-    public NotificationService(NotificationRepository notificationRepository,
-                               ModelMapper modelMapper) {
-        this.notificationRepository = notificationRepository;
-        this.modelMapper = modelMapper;
+    private final PushTokenRepository pushTokenRepository;
+    private final RestTemplate restTemplate;
+
+    public NotificationService(PushTokenRepository pushTokenRepository) {
+        this.pushTokenRepository = pushTokenRepository;
+        this.restTemplate = new RestTemplate();
     }
 
-    // Send Notification
-    public NotificationLog sendNotification(NotificationDTO notificationDTO) {
+    public boolean sendAlertNotification(Alert alert) {
+        try {
+            List<String> validTokens = pushTokenRepository.findAll()
+                    .stream()
+                    .map(PushToken::getToken)
+                    .filter(this::isValidExpoPushToken)
+                    .distinct()
+                    .toList();
 
-        NotificationLog notification =
-                modelMapper.map(notificationDTO, NotificationLog.class);
+            if (validTokens.isEmpty()) {
+                System.out.println("❌ No valid Expo push tokens found");
+                return false;
+            }
 
-        notification.setStatus("SENT");
-        notification.setSentAt(LocalDateTime.now());
+            System.out.println("📱 Found " + validTokens.size() + " unique push token(s)");
 
-        return notificationRepository.save(notification);
+            List<Map<String, Object>> messages = new ArrayList<>();
+
+            for (String token : validTokens) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("alertId", alert.getId());
+                data.put("uuid", alert.getUuid());
+                data.put("priority", alert.getPriority());
+
+                Map<String, Object> message = new HashMap<>();
+                message.put("to", token);
+                message.put("sound", "default");
+                message.put("title", "🚨 " + alert.getTitle());
+                message.put("body", alert.getMessage());
+                message.put("data", data);
+
+                messages.add(message);
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+            headers.set("Accept-Encoding", "gzip, deflate");
+
+            HttpEntity<List<Map<String, Object>>> request =
+                    new HttpEntity<>(messages, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    EXPO_PUSH_URL,
+                    request,
+                    String.class
+            );
+
+            System.out.println("📩 Expo push response:");
+            System.out.println(response.getBody());
+
+            return response.getStatusCode().is2xxSuccessful();
+
+        } catch (Exception error) {
+            System.out.println("❌ Push notification error: " + error.getMessage());
+            return false;
+        }
     }
 
-    // Get All Notification Logs
-    public List<NotificationLog> getAllNotifications() {
-        return notificationRepository.findAll();
-    }
-
-    // Get Notification By Id
-    public NotificationLog getNotificationById(Long id) {
-        return notificationRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Notification not found with id: " + id));
-    }
-
-    // Delete Notification Log
-    public void deleteNotification(Long id) {
-
-        NotificationLog notification = getNotificationById(id);
-
-        notificationRepository.delete(notification);
+    private boolean isValidExpoPushToken(String token) {
+        return token != null &&
+                (token.startsWith("ExponentPushToken[") ||
+                        token.startsWith("ExpoPushToken["));
     }
 }

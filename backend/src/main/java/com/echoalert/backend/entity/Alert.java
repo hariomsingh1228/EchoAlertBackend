@@ -19,40 +19,46 @@ public class Alert {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 🔥 NEW: Global Unique ID (for Bluetooth mesh)
+    // Global Unique ID for Bluetooth mesh
     @Column(nullable = false, unique = true, updatable = false)
     private String uuid;
 
-    // Alert Title
     @Column(nullable = false)
     private String title;
 
-    // Alert Message
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
-    // HIGH / MEDIUM / LOW
     @Column(nullable = false)
     private String priority;
 
-    // ACTIVE / CLOSED
     @Column(nullable = false)
     private String status;
 
-    // Target Area / City / Zone
     private String location;
 
-    // Alert Created Time
     private LocalDateTime createdAt;
 
-    // 🔥 AUTO SET UUID + TIME
+    // Push notification sent status
+    @Column(nullable = false)
+    private Boolean sent = false;
+
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
 
-        // UUID auto generate (important for mesh system)
-        if (this.uuid == null) {
+        if (this.uuid == null || this.uuid.isBlank()) {
             this.uuid = UUID.randomUUID().toString();
+        }
+
+        if (this.status == null || this.status.isBlank()) {
+            this.status = "ACTIVE";
+        }
+
+        if (this.sent == null) {
+            this.sent = false;
         }
     }
 }

@@ -1,12 +1,8 @@
 package com.echoalert.backend.controller;
 
-import com.echoalert.backend.dto.NotificationDTO;
-import com.echoalert.backend.entity.NotificationLog;
+import com.echoalert.backend.entity.Alert;
 import com.echoalert.backend.service.NotificationService;
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -19,34 +15,21 @@ public class NotificationController {
         this.notificationService = notificationService;
     }
 
-    // Send Notification
-    @PostMapping("/send")
-    public NotificationLog sendNotification(
-            @Valid @RequestBody NotificationDTO notificationDTO) {
-
-        return notificationService.sendNotification(notificationDTO);
+    // ✅ Test route
+    @GetMapping("/test")
+    public String testNotificationController() {
+        return "Notification controller is working. Notifications are now sent automatically when an alert is created.";
     }
 
-    // Get All Notification Logs
-    @GetMapping
-    public List<NotificationLog> getAllNotifications() {
-        return notificationService.getAllNotifications();
-    }
+    // ✅ Optional manual test using Alert body
+    @PostMapping("/send-alert")
+    public String sendAlertNotification(@RequestBody Alert alert) {
+        boolean sent = notificationService.sendAlertNotification(alert);
 
-    // Get Notification By Id
-    @GetMapping("/{id}")
-    public NotificationLog getNotificationById(
-            @PathVariable Long id) {
+        if (sent) {
+            return "Notification sent successfully";
+        }
 
-        return notificationService.getNotificationById(id);
-    }
-
-    // Delete Notification Log
-    @DeleteMapping("/{id}")
-    public String deleteNotification(
-            @PathVariable Long id) {
-
-        notificationService.deleteNotification(id);
-        return "Notification deleted successfully";
+        return "Notification failed or no valid push tokens found";
     }
 }
