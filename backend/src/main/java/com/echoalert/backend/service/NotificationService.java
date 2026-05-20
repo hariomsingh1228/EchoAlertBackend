@@ -48,7 +48,13 @@ public class NotificationService {
 
                 Map<String, Object> message = new HashMap<>();
                 message.put("to", token);
-                message.put("sound", "default");
+
+                // Custom notification sound
+                message.put("sound", "emergency.mp3");
+
+                // Android notification channel
+                message.put("channelId", "echo-alerts");
+
                 message.put("title", "🚨 " + alert.getTitle());
                 message.put("body", alert.getMessage());
                 message.put("data", data);
